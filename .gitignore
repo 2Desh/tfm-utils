@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyCharm
+.idea/
+
+# Build / distribution
+.build/
+build/
+dist/
+*.spec
+
+# Local files
+clean_env/
+
+# OS
+.DS_Store
+Thumbs.db
