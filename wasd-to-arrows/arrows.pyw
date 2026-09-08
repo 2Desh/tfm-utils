@@ -5,6 +5,8 @@ from PIL import Image, ImageDraw, ImageFont
 import threading
 import time
 from pathlib import Path
+import sys
+import os
 
 
 class ArrowUtility:
@@ -45,7 +47,12 @@ class ArrowUtility:
         self.use_combo = False
 
         # Application paths
-        self.base_dir = Path(__file__).resolve().parent
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # Compiled executable
+            self.base_dir = Path(sys._MEIPASS)
+        else:
+            # Python script
+            self.base_dir = Path(__file__).resolve().parent
 
         # OS language detection
         self.current_lang = self.detect_language()
@@ -296,6 +303,7 @@ class ArrowUtility:
         text = str(time_left)
 
         try:
+            # Try the bundled or local Verdana font first.
             font_path = self.base_dir / "Verdana.ttf"
 
             font = ImageFont.truetype(
@@ -305,12 +313,35 @@ class ArrowUtility:
 
         except OSError:
             try:
+                # If Verdana is not bundled, try the Windows system font.
+                windows_font_dir = Path(
+                    os.environ.get("WINDIR", "C:\\Windows")
+                ) / "Fonts"
+
+                font_path = windows_font_dir / "verdana.ttf"
+
                 font = ImageFont.truetype(
-                    "arial.ttf",
+                    font_path,
                     48
                 )
+
             except OSError:
-                font = ImageFont.load_default()
+                try:
+                    # Fallback to Arial installed in Windows.
+                    windows_font_dir = Path(
+                        os.environ.get("WINDIR", "C:\\Windows")
+                    ) / "Fonts"
+
+                    font_path = windows_font_dir / "arial.ttf"
+
+                    font = ImageFont.truetype(
+                        font_path,
+                        48
+                    )
+
+                except OSError:
+                    # Final fallback: Pillow default font.
+                    font = ImageFont.load_default()
 
         x, y = 32, 32
 
@@ -363,7 +394,7 @@ class ArrowUtility:
                         keyboard.write(f'{arrow_char} ')
                         return
 
-                    # Third press replaces the two existing tfm-utils with combo notation:
+                    # Third press replaces the two existing arrows with combo notation:
                     # ↑ ↑ → [↑ x3]
                     if self.combo_count == 3:
                         to_erase = (
@@ -414,7 +445,7 @@ class ArrowUtility:
             self.is_typing = True
 
             try:
-                # For 1 or 2 tfm-utils, remove only the last arrow
+                # For 1 or 2 arrows, remove only the last arrow
                 if self.combo_count <= 2:
                     keyboard.send('backspace')
                     time.sleep(0.015)
@@ -570,7 +601,7 @@ class ArrowUtility:
                 ),
             ])
 
-        # [Arrow keys] mode
+        # Arrow keys mode
         else:
             self.hotkey_hooks.extend([
                 keyboard.add_hotkey(
